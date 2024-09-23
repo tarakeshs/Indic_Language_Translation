@@ -1,25 +1,27 @@
 from flask import Blueprint, request, jsonify
-from app.models import google_translate
+from app.models.google_translate import translate_with_google
 
 main = Blueprint('main', __name__)
 
-# Base route to check if the API is working
-@main.route('/')
-def home():
-    return jsonify(message="Welcome to the Indic Language Translation API!")
-
-# Translation route using Google Translate API by default
 @main.route('/translate', methods=['POST'])
-def translate():
+def translate_route():
     data = request.json
-    text = data.get('text')
-    target_language = data.get('target_language')
+    text = data.get('text')  # Get the original text
+    target_language = data.get('target_language')  # Get the target language
+    model_flag = data.get('model')  # Use this flag to switch between models
 
-    if not text or not target_language:
+    if not text or not target_language or not model_flag:
         return jsonify({"error": "Missing required parameters"}), 400
 
     try:
-        translated_text = google_translate.translate(text, target_language)
-        return jsonify({"translated_text": translated_text}), 200
+        if model_flag == 'google':
+            # Call the logic from google_translate.py
+            translation_result = translate_with_google(text, target_language)
+        else:
+            return jsonify({"error": "Invalid model flag"}), 400
+
+        # Return the response based on the chosen model's result
+        return jsonify(translation_result), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
